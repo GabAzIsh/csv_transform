@@ -105,6 +105,16 @@ class TableForCreditSum:
     def row_count(self):
         return len(self.data[0])
 
+    @property
+    def table(self):
+        for column_name in self.col_names_dict.keys():
+            column_index = self.col_names_dict[column_name]
+            if not column_name.startswith('%') and (column_index != 0):
+                self.data[column_index] = [round(item/100, 2) for item in self.data[column_index]]
+        values = [list(i) for i in zip(*self.data)]
+        values.insert(0, list(self.col_names_dict.keys()))
+        return values
+
     def sort_by(self, column_name):
         table_raw = list(zip(*self.data))
         column_number = self.col_names_dict[column_name]
@@ -129,7 +139,7 @@ class Rearrange:
                 point_index = fieldnames.index(str(point_row[0]))
                 date_row[point_index] = point_row[1]
                 # date_row[point_index+1] = round((point_row[1]/date_cells[2])*100)
-                date_row[point_index + 1] = (point_row[1] / date_cells[2]) * 100
+                date_row[point_index + 1] = round((point_row[1] / date_cells[2]) * 100, 2)
                 # print(point_row[0])
             data_table.append(date_row)
         t_axe_table = [list(i) for i in zip(*data_table)]
@@ -138,8 +148,8 @@ class Rearrange:
     def prepare_fieldnames(self, y_axe, x_axe):
         x_set = sorted(list(set(self.table[x_axe])))
         # create fieldnames
-        x_set = [str(item) for item in x_set]
-        fieldnames = ' % '.join(x_set).split(' ') + [' %']
+        fieldnames = [sub for item in x_set for sub in (str(item), f'% для {item}')]
+        # fieldnames = ' % '.join(x_set).split(' ') + [' %']
         fieldnames.insert(0, f'{y_axe}\\{x_axe}')
         return fieldnames
 
@@ -198,8 +208,8 @@ if __name__ == '__main__':
     # File writer
     with open('output_table.csv', 'w', encoding='cp1251', newline='') as csvfile:
         csv_writer = csv.writer(csvfile, delimiter=';')
-        csv_writer.writerow(new_table.col_names_dict.keys())
-        csv_writer.writerows(new_table.data)
+        rtyt = new_table.table
+        [csv_writer.writerow(row) for row in new_table.table]
 
     # main_dict = {
     #     'ACCOUNT_RK': 'номер договора',
