@@ -183,20 +183,27 @@ class Rearrange:
 
 
 if __name__ == '__main__':
+
+    # File opener
     with open('data.csv', 'r') as file:
         reader = csv.DictReader(file, delimiter=';')
         # raw_data = [row for row in reader]
         table = TableForCreditSum(reader, reader.fieldnames)
-    # group table by dates and points
+
+    # make a new table
     typing(table)
     table.sort_by(column_dict['дата'])
-
     new_table = Rearrange(table).two_axe_table(column_dict['дата'], column_dict['номер точки продажи (POS)'])
-    # new_table.sum()
 
-    main_dict = {
-        'ACCOUNT_RK': 'номер договора',
-        'INTERNAL_ORG_ORIGINAL_RK': 'номер точки продажи (POS)',
-        'LOAN_AMOUNT': 'сумма кредита',
-        'APPLICATION_DT': 'дата'
-    }
+    # File writer
+    with open('output_table.csv', 'w', encoding='cp1251', newline='') as csvfile:
+        csv_writer = csv.writer(csvfile, delimiter=';')
+        csv_writer.writerow(new_table.col_names_dict.keys())
+        csv_writer.writerows(new_table.data)
+
+    # main_dict = {
+    #     'ACCOUNT_RK': 'номер договора',
+    #     'INTERNAL_ORG_ORIGINAL_RK': 'номер точки продажи (POS)',
+    #     'LOAN_AMOUNT': 'сумма кредита',
+    #     'APPLICATION_DT': 'дата'
+    # }
