@@ -43,9 +43,9 @@ def typing(data):
 
 class TableForCreditSum:
     def __init__(self, data, fieldnames):
-        assert 'LOAN_AMOUNT' in fieldnames, 'Table must consist "LOAN_AMOUNT" field'
         self.col_names_dict = self.col_names_dict_from_list(fieldnames)
         if isinstance(data, csv.DictReader):
+            assert 'LOAN_AMOUNT' in fieldnames, 'Table must consist "LOAN_AMOUNT" field'
             self.data = self.from_csv(data)
         elif isinstance(data, list):
             if len(data) != len(fieldnames):
@@ -63,7 +63,7 @@ class TableForCreditSum:
         return len(self.data)
 
     def __getitem__(self, column_index):
-        if column_index is int:
+        if type(column_index) is int:
             return self.data[column_index]
         elif type(column_index) is str:
             if column_index in self.col_names_dict.keys():
@@ -114,26 +114,32 @@ class TableForCreditSum:
 
 class Rearrange:
 
-    def __init__(self, table_for_rearrange):
+    def __init__(self, table_for_rearrange, aggregate='sum'):
         self.table = table_for_rearrange
+        self.aggregate_function = aggregate
 
     @classmethod
     def render_table(cls, data_list, fieldnames):
         data_table = []
         for date_cells in data_list:
             date_row = [0 for i in range(len(fieldnames))]
+            date_row[0] = date_cells[0]
             point_amount_cells = date_cells[1]
             for point_row in point_amount_cells:
-                date_row[fieldnames.index(str(point_row[0]))] = point_row[1]
-                print(point_row[0])
-            data_table.append([date_cells[0], date_row])
-        return data_table
+                point_index = fieldnames.index(str(point_row[0]))
+                date_row[point_index] = point_row[1]
+                # date_row[point_index+1] = round((point_row[1]/date_cells[2])*100)
+                date_row[point_index + 1] = (point_row[1] / date_cells[2]) * 100
+                # print(point_row[0])
+            data_table.append(date_row)
+        t_axe_table = [list(i) for i in zip(*data_table)]
+        return t_axe_table
 
     def prepare_fieldnames(self, y_axe, x_axe):
         x_set = sorted(list(set(self.table[x_axe])))
         # create fieldnames
         x_set = [str(item) for item in x_set]
-        fieldnames = ' % '.join(x_set).split(' ')
+        fieldnames = ' % '.join(x_set).split(' ') + [' %']
         fieldnames.insert(0, f'{y_axe}\\{x_axe}')
         return fieldnames
 
@@ -148,7 +154,6 @@ class Rearrange:
         x_y_list = []
         point_amount_cells = []
         amount_chunk = 0
-        sum_for_date = 0
         # Create 2 axe list with required axes in 1 cycle
         for i in range(self.table.row_count):
             amount_for_i = self.table[column_dict['сумма кредита']][i]
@@ -162,17 +167,17 @@ class Rearrange:
             else:
                 if point_amount_cells:
                     point_amount_cells.append([i_x_set, amount_chunk])
-                    x_y_list.append([i_y_set, point_amount_cells, sum_for_date])
+                    x_y_list.append([i_y_set, point_amount_cells, sum([point[1] for point in point_amount_cells])])
                 i_x_set = self.table[x_axe][i]
                 i_y_set = self.table[y_axe][i]
                 amount_chunk = amount_for_i
-                sum_for_date = amount_chunk
                 point_amount_cells = []
-            if i == len(table[0]) - 1:
+            if i == len(self.table[0]) - 1:
                 point_amount_cells.append([i_x_set, amount_chunk])
-                x_y_list.append([i_y_set, point_amount_cells, sum_for_date])
+                x_y_list.append([i_y_set, point_amount_cells, sum([point[1] for point in point_amount_cells])])
         # Rendering from the list the table
-        self.t_axe_table = self.render_table(x_y_list, fieldnames)
+        t_axe_table = self.render_table(x_y_list, fieldnames)
+        return TableForCreditSum(t_axe_table, fieldnames)
 
 
 
@@ -187,7 +192,7 @@ if __name__ == '__main__':
     table.sort_by(column_dict['дата'])
 
     new_table = Rearrange(table).two_axe_table(column_dict['дата'], column_dict['номер точки продажи (POS)'])
-    new_table.sum()
+    # new_table.sum()
 
     main_dict = {
         'ACCOUNT_RK': 'номер договора',
